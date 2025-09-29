@@ -5,19 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>DA Price Report</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
   :root { --da-green:#0b6623; --light-yellow:#ded371; }
 
   body {
-    font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    font-family:Inter,Arial,sans-serif;
     background:#f0f4f7;
     margin:0; padding:8px;
     font-size:13px;
   }
 
-  /* Non-printable controls */
+  /* Control Panel (Hidden on Print) */
   .controls {
     background:#fff;
     border-radius:6px;
@@ -47,8 +47,12 @@
   .yellow-strip{background:var(--light-yellow);height:4px;width:100%}
 
   .header {
-    display:flex;justify-content:space-between;align-items:center;
-    padding:8px 16px;background:#fff;margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 16px;
+    background:#fff;
+    margin-bottom:8px;
   }
   .left-block{display:flex;align-items:center;gap:10px}
   .left-block img{height:55px}
@@ -81,7 +85,7 @@
   .table-container {
     background:#fff;
     border-radius:6px;
-    padding:10px;
+    padding:8px;
   }
   table {
     width:100%;
@@ -89,8 +93,8 @@
   }
   th,td {
     border:1px solid #ddd;
-    padding:6px 8px;
-    font-size:12px;
+    padding:4px 6px; /* compact grid spacing */
+    font-size:13px;
   }
   th {
     background:#0b6623;
@@ -102,16 +106,22 @@
   .error { color:#b91c1c; font-weight:600; }
 
   /* Footer */
-  .footer-logo{display:flex;justify-content:flex-end;padding:6px 20px 0 0}
-  .footer-logo img{height:55px}
+  .footer-logo {
+    display:flex;
+    justify-content:flex-end;
+    padding:8px 20px 0 0;
+  }
+  .footer-logo img {
+    height:65px;
+  }
   footer {
     background:var(--da-green);
     color:white;
-    padding:6px 16px;
+    padding:8px 16px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    font-size:11px;
+    font-size:12px;
     margin-top:10px;
   }
   footer a {color:white;text-decoration:none}
@@ -141,8 +151,7 @@
           Regional Field Office IX<br>
           Lenienza St., Pagadian City
         </div>
-      </div>
-      <img src="https://raw.githubusercontent.com/amadnuevedpi/DA-AMAD-BP-logos/main/bag%20pil.png" height="55" alt="Bagong Pilipinas">
+      </div
     </div>
 
     <div class="price-monitoring">REGION IX AGRI-FISHERY AND CIGARETTES</div>
@@ -159,7 +168,7 @@
     </div>
 
     <div class="footer-logo">
-      <img src="https://raw.githubusercontent.com/amadnuevedpi/DA-AMAD-BP-logos/main/ZAMPEN%20AMAD.png" alt="Zampen AMAD">
+      <img src="https://raw.githubusercontent.com/amadnuevedpi/DA-AMAD-BP-logos/main/ZAMPEN%20VINTA1.png" alt="Zampen Vinta">
     </div>
 
     <footer>
@@ -238,6 +247,8 @@ function identifyDates(){
     document.getElementById('asOfDate').innerText = `As of ${dc ? dc.label : ''}`;
   });
 
+  document.getElementById('downloadPdf').addEventListener('click',downloadPDF);
+
   // Auto-load last date
   document.getElementById('loadBtn').click();
 }
@@ -264,19 +275,17 @@ function downloadPDF(){
   if(!window.html2pdf){
     const s=document.createElement('script');
     s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js';
-    s.onload=()=>html2pdf().set({
-      margin:5,
-      filename:`DA-Price-Report-${new Date().toISOString().slice(0,10)}.pdf`,
-      pagebreak:{mode:['avoid-all','css','legacy']}
-    }).from(area).save();
+    s.onload=()=>generatePDF(area);
     document.body.appendChild(s);
-  } else {
-    html2pdf().set({
-      margin:5,
-      filename:`DA-Price-Report-${new Date().toISOString().slice(0,10)}.pdf`,
-      pagebreak:{mode:['avoid-all','css','legacy']}
-    }).from(area).save();
-  }
+  } else generatePDF(area);
+}
+
+function generatePDF(area){
+  html2pdf().set({
+    margin:5,
+    filename:`DA-Price-Report-${new Date().toISOString().slice(0,10)}.pdf`,
+    pagebreak:{mode:['avoid-all','css','legacy']}
+  }).from(area).save();
 }
 </script>
 </body>
