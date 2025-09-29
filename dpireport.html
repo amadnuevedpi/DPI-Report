@@ -13,25 +13,25 @@
   body {
     font-family:Inter,Arial,sans-serif;
     background:#f0f4f7;
-    margin:0; padding:8px;
+    margin:0; padding:12px;
     font-size:13px;
   }
 
   /* Control Panel (Hidden on Print) */
   .controls {
     background:#fff;
-    border-radius:6px;
-    padding:10px 14px;
-    margin-bottom:10px;
-    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    border-radius:8px;
+    padding:14px 18px;
+    margin-bottom:16px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.08);
   }
   @media print { .controls { display:none !important; } }
 
   select,button {
-    padding:6px 10px;
-    border-radius:4px;
+    padding:8px 12px;
+    border-radius:6px;
     border:1px solid #ccc;
-    font-size:13px;
+    font-size:14px;
   }
   button {
     cursor:pointer;
@@ -43,49 +43,50 @@
   button:hover { background:#0a5820; }
 
   /* Header */
-  .top-strip{background:var(--da-green);height:4px;width:100%}
-  .yellow-strip{background:var(--light-yellow);height:4px;width:100%}
+  .top-strip{background:var(--da-green);height:6px;width:100%}
+  .yellow-strip{background:var(--light-yellow);height:6px;width:100%}
 
   .header {
     display:flex;
     justify-content:space-between;
     align-items:center;
-    padding:8px 16px;
+    padding:16px 28px;
     background:#fff;
-    margin-bottom:8px;
+    margin-bottom:16px;
   }
-  .left-block{display:flex;align-items:center;gap:10px}
-  .left-block img{height:55px}
-  .agency-text{font-size:12px;line-height:1.3}
-  .agency-text strong{font-size:13px;display:block;color:var(--da-green)}
+  .left-block{display:flex;align-items:center;gap:16px}
+  .left-block img{height:70px}
+  .agency-text{font-size:14px;line-height:1.4}
+  .agency-text strong{font-size:16px;display:block;color:var(--da-green)}
 
   /* Titles */
   .price-monitoring {
     text-align:center;
     background:var(--light-yellow);
-    padding:6px;
-    font-size:16px;
+    padding:10px;
+    font-size:20px;
     font-weight:700;
+    margin-bottom:4px;
   }
   .sub-title {
     text-align:center;
-    font-size:15px;
+    font-size:18px;
     font-weight:700;
-    color:#333;
+    color:#222;
     margin:4px 0;
   }
   .asof {
     text-align:center;
-    font-size:12px;
+    font-size:13px;
     font-style:italic;
-    margin-bottom:6px;
+    margin-bottom:10px;
   }
 
   /* Table */
   .table-container {
     background:#fff;
-    border-radius:6px;
-    padding:8px;
+    border-radius:8px;
+    padding:14px;
   }
   table {
     width:100%;
@@ -93,7 +94,7 @@
   }
   th,td {
     border:1px solid #ddd;
-    padding:4px 6px; /* compact grid spacing */
+    padding:6px 8px;
     font-size:13px;
   }
   th {
@@ -102,27 +103,27 @@
     text-align:left;
   }
 
-  .notes { margin-top:6px;font-size:12px;color:#555; }
+  .notes { margin-top:8px;font-size:13px;color:#555; }
   .error { color:#b91c1c; font-weight:600; }
 
   /* Footer */
   .footer-logo {
     display:flex;
     justify-content:flex-end;
-    padding:8px 20px 0 0;
+    padding:12px 30px 0 0;
   }
   .footer-logo img {
-    height:65px;
+    height:80px;
   }
   footer {
     background:var(--da-green);
     color:white;
-    padding:8px 16px;
+    padding:12px 30px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    font-size:12px;
-    margin-top:10px;
+    font-size:13px;
+    margin-top:14px;
   }
   footer a {color:white;text-decoration:none}
 </style>
@@ -130,8 +131,8 @@
 
 <body>
   <div class="controls">
-    <h3 style="margin:0 0 6px 0;font-size:14px;">Agri-Fishery Commodity Retail Price</h3>
-    <label style="font-size:12px;margin-right:6px;">Select Date:</label>
+    <h3 style="margin:0 0 10px 0;font-size:15px;">Agri-Fishery Commodity Retail Price</h3>
+    <label style="font-size:13px;margin-right:6px;">Select Date:</label>
     <select id="dateSelect"></select>
     <button id="loadBtn">Load</button>
     <button id="downloadPdf">Download PDF</button>
@@ -151,7 +152,7 @@
           Regional Field Office IX<br>
           Lenienza St., Pagadian City
         </div>
-      </div
+      </div>
     </div>
 
     <div class="price-monitoring">REGION IX AGRI-FISHERY AND CIGARETTES</div>
@@ -282,7 +283,7 @@ function downloadPDF(){
 
 function generatePDF(area){
   html2pdf().set({
-    margin:5,
+    margin:10,
     filename:`DA-Price-Report-${new Date().toISOString().slice(0,10)}.pdf`,
     pagebreak:{mode:['avoid-all','css','legacy']}
   }).from(area).save();
