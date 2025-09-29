@@ -3,181 +3,216 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Commodity Price — Live Report</title>
+<title>DA Price Report</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600,700&display=swap" rel="stylesheet">
+
 <style>
-  body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:#f7faf7;margin:20px;}
-  .container{max-width:980px;margin:0 auto;background:white;padding:18px;border-radius:8px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
-  header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-  select,button{padding:8px 10px;border-radius:6px;border:1px solid #d1d5db}
-  button{background:#0b6b3a;color:white;border:none;cursor:pointer}
-  table{width:100%;border-collapse:collapse;margin-top:14px}
-  th,td{padding:8px;border-bottom:1px solid #eef2e8;text-align:left}
-  .notes{margin-top:12px;font-size:13px;color:#475569}
-  .error{color:#b91c1c;font-weight:600}
+  :root { --da-green:#0b6623; --light-yellow:#ded371; }
+
+  body {
+    font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    background:#f0f4f7; margin:0; padding:12px;
+  }
+
+  /* Non-printable UI area */
+  .controls {
+    background:#fff; border-radius:8px; padding:14px;
+    margin-bottom:16px; box-shadow:0 4px 10px rgba(0,0,0,0.05);
+  }
+  @media print { .controls { display:none !important; } }
+
+  select,button {
+    padding:8px 10px; border-radius:6px; border:1px solid #ccc; font-size:14px;
+  }
+  button { cursor:pointer; background:#0b6623; color:#fff; border:none; }
+  button:hover { background:#0a5820; }
+
+  /* Header styles */
+  .top-strip{background:var(--da-green);height:6px;width:100%}
+  .yellow-strip{background:var(--light-yellow);height:6px;width:100%}
+  .header {
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding:15px 30px;background:#fff;margin-bottom:12px;
+  }
+  .left-block{display:flex;align-items:center;gap:15px}
+  .left-block img{height:70px}
+  .agency-text{font-size:14px;line-height:1.4}
+  .agency-text strong{font-size:15px;display:block;color:var(--da-green)}
+
+  .price-monitoring {
+    text-align:center; background:var(--light-yellow);
+    padding:8px; font-size:20px; font-weight:bold; margin-bottom:12px;
+  }
+
+  /* Table design */
+  .table-container { background:#fff; border-radius:8px; padding:16px; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; }
+  th,td { border:1px solid #ddd; padding:8px 10px; font-size:14px; }
+  th { background:#0b6623; color:#fff; text-align:left; }
+
+  .notes { margin-top:10px; font-size:13px; color:#555; }
+  .error { color:#b91c1c; font-weight:600; }
+
+  /* Footer */
+  .footer-logo{display:flex;justify-content:flex-end;padding:10px 30px 0 0}
+  .footer-logo img{height:70px}
+  footer {
+    background:var(--da-green); color:white; padding:10px 30px;
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:13px;margin-top:16px;
+  }
+  footer a {color:white;text-decoration:none}
 </style>
 </head>
+
 <body>
-  <div class="container">
-    <header>
-      <div>
-        <h3 style="margin:0 0 6px 0">Commodity Price — Live (Google Sheet CSV)</h3>
-        <div id="meta" style="color:#64748b;font-size:13px">Make sure sheet is published as CSV.</div>
-      </div>
+  <div class="controls">
+    <h3 style="margin:0 0 8px 0">Commodity Price — Live (Google Sheet CSV)</h3>
+    <div style="font-size:13px;color:#666;margin-bottom:6px;">
+      Make sure sheet is published as CSV.
+    </div>
+    <label style="font-size:13px;margin-right:6px;">Select Date:</label>
+    <select id="dateSelect"></select>
+    <button id="loadBtn">Load</button>
+    <button id="downloadPdf">Download PDF</button>
+    <div id="notes" class="notes"></div>
+  </div>
 
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <label style="font-size:13px;color:#64748b">Select date</label>
-        <select id="dateSelect"></select>
-        <button id="loadBtn">Load</button>
-        <button id="downloadPdf">Download PDF</button>
-      </div>
-    </header>
+  <!-- Printable Area -->
+  <div id="reportArea">
+    <div class="top-strip"></div>
+    <div class="yellow-strip"></div>
 
-    <div style="overflow:auto">
+    <div class="header">
+      <div class="left-block">
+        <img src="https://raw.githubusercontent.com/amadnuevedpi/DA-AMAD-BP-logos/main/da.png" alt="DA Logo">
+        <div class="agency-text">
+          <strong>Department of Agriculture</strong>
+          AGRIBUSINESS MARKETING ASSISTANCE DIVISION<br>
+          Regional Field Office IX<br>
+          Lenienza St., Pagadian City
+        </div>
+      </div>
+    </div>
+
+    <div class="price-monitoring">Price Monitoring Report</div>
+
+    <div class="table-container">
       <table id="priceTable">
-        <thead><tr><th>Commodity</th><th>Specification</th><th>Unit</th><th>Price</th></tr></thead>
+        <thead>
+          <tr><th>Commodity</th><th>Specification</th><th>Unit</th><th>Price</th></tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>
 
-    <div class="notes" id="notes">Status: waiting to fetch sheet…</div>
+    <div class="footer-logo">
+      <img src="https://raw.githubusercontent.com/amadnuevedpi/DA-AMAD-BP-logos/main/Bagong%20Pilipinas.png" alt="Bagong Pilipinas Footer">
+    </div>
+    <footer>
+      <div class="footer-left">Generated by DA-AMAD Price Monitoring System</div>
+      <div><a href="#">Department of Agriculture RFO IX</a></div>
+    </footer>
   </div>
 
 <script>
 const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2B1kT01540Rd4EIE1JmbBGoJVIF_N15yBJ815TaB_N8tViqufx1hksC9J-HcRcN8jvP2QLfl84yQr/pub?gid=1473969119&single=true&output=csv";
 
-function showNote(msg, isError=false){
-  const n = document.getElementById('notes');
-  n.innerHTML = (isError?'<span class="error">Error:</span> ':'') + msg;
-  console.log(msg);
+function showNote(msg,isErr=false){
+  const el=document.getElementById('notes');
+  el.innerHTML=(isErr?'<span class="error">Error:</span> ':'')+msg;
 }
 
-// Load PapaParse
-const papa = document.createElement('script');
-papa.src = 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js';
-papa.onload = init;
+const papa=document.createElement('script');
+papa.src='https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js';
+papa.onload=init;
 document.head.appendChild(papa);
 
-let rows = [], headerRow = [], dateColumns = [];
+let rows=[],headerRow=[],dateColumns=[];
 
 function init(){
-  showNote('Loading CSV from Google Sheets...');
-  fetchAndParse();
+  showNote('Loading CSV...');
+  fetch(SHEET_CSV,{cache:'no-store'})
+    .then(r=>r.text())
+    .then(txt=>{
+      const parsed=Papa.parse(txt,{skipEmptyLines:false});
+      rows=parsed.data;
+      headerRow=rows[9]||[];
+      identifyDates();
+    }).catch(e=>showNote(e.message,true));
 }
 
-async function fetchAndParse(){
-  try {
-    const res = await fetch(SHEET_CSV, { cache: "no-store" });
-    const txt = await res.text();
-    if(!txt.trim()) return showNote('Empty CSV, make sure it’s published.', true);
+function parseDateISO(t){
+  if(!t)return null;
+  const s=String(t).trim();
+  const d=new Date(s);
+  if(!isNaN(d))return d.toISOString().slice(0,10);
 
-    const parsed = Papa.parse(txt, { skipEmptyLines:false });
-    rows = parsed.data;
-    headerRow = rows[9] || []; // Row 10 = header
-    identifyDateColumns();
-  } catch (err) {
-    console.error(err);
-    showNote('❌ Fetch/parsing failed — ' + err.message, true);
-  }
-}
-
-// Convert various date formats (e.g. "January 4, 2025" or 45678) → ISO
-function parseDateISO(text){
-  if(!text) return null;
-  const t = String(text).trim();
-
-  // Try standard JS date parse
-  const direct = new Date(t);
-  if(!isNaN(direct)) return direct.toISOString().slice(0,10);
-
-  // Try "Month day, year"
-  const m = t.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
+  const m=s.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
   if(m){
-    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    const idx = months.indexOf(m[1]);
-    if(idx >= 0){
-      const d = new Date(Date.UTC(m[3], idx, m[2]));
-      return d.toISOString().slice(0,10);
-    }
+    const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const i=months.indexOf(m[1]);
+    if(i>=0)return new Date(Date.UTC(m[3],i,m[2])).toISOString().slice(0,10);
   }
-
-  // Try Excel numeric serial date (Google Sheets)
-  const n = Number(t);
-  if(!isNaN(n) && n > 10000){
-    const excelEpoch = new Date(Date.UTC(1899,11,30));
-    const d = new Date(excelEpoch.getTime() + n * 24*60*60*1000);
-    return d.toISOString().slice(0,10);
+  const n=Number(s);
+  if(!isNaN(n)&&n>10000){
+    const base=new Date(Date.UTC(1899,11,30));
+    return new Date(base.getTime()+n*86400000).toISOString().slice(0,10);
   }
-
   return null;
 }
 
-// Identify all date columns (starting at D)
-function identifyDateColumns(){
-  dateColumns = [];
-  for(let i=3; i<headerRow.length; i++){ // start at column D (index 3)
-    const iso = parseDateISO(headerRow[i]);
-    if(iso) dateColumns.push({index:i, raw:headerRow[i], iso});
+function identifyDates(){
+  dateColumns=[];
+  for(let i=3;i<headerRow.length;i++){
+    const iso=parseDateISO(headerRow[i]);
+    if(iso)dateColumns.push({index:i,iso,label:headerRow[i]});
   }
-
-  if(dateColumns.length === 0){
-    showNote('⚠️ No valid date columns found in header row (Row 10).', true);
-    return;
-  }
-
-  const sel = document.getElementById('dateSelect');
-  sel.innerHTML = dateColumns.map(dc => {
-    const label = (new Date(dc.iso)).toLocaleDateString(undefined, {year:'numeric',month:'short',day:'numeric'});
-    return `<option value="${dc.index}">${label}</option>`;
-  }).join('');
-
-  sel.value = dateColumns[dateColumns.length - 1].index;
-  showNote(`✅ Found ${dateColumns.length} date columns. Defaulting to latest.`);
-
-  document.getElementById('loadBtn').addEventListener('click', () => renderByColumn(Number(sel.value)));
-
-  // PDF download
-  document.getElementById('downloadPdf').addEventListener('click', ()=>{
-    const el = document.querySelector('.container');
-    if(!window.html2pdf){
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js';
-      s.onload = ()=> html2pdf().set({margin:10, filename:`Commodity-Report-${new Date().toISOString().slice(0,10)}.pdf`}).from(el).save();
-      document.body.appendChild(s);
-    } else {
-      html2pdf().set({margin:10, filename:`Commodity-Report-${new Date().toISOString().slice(0,10)}.pdf`}).from(el).save();
-    }
-  });
+  if(dateColumns.length===0)return showNote('⚠️ No valid date columns found.',true);
+  const sel=document.getElementById('dateSelect');
+  sel.innerHTML=dateColumns.map(dc=>`<option value="${dc.index}">${new Date(dc.iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}</option>`).join('');
+  sel.value=dateColumns.at(-1).index;
+  showNote(`✅ Loaded ${dateColumns.length} date columns.`);
+  document.getElementById('loadBtn').addEventListener('click',()=>renderByColumn(Number(sel.value)));
+  document.getElementById('downloadPdf').addEventListener('click',downloadPDF);
 }
 
-function renderByColumn(colIndex){
-  const tbody = document.querySelector('#priceTable tbody');
-  tbody.innerHTML = '';
-  let rendered = 0;
-
-  for(let r=10; r<rows.length; r++){ // Data starts row 11
-    const row = rows[r];
-    if(!row || row.length < colIndex) continue;
-
-    const commodity = row[0] || '';
-    const spec = row[1] || '';
-    const unit = row[2] || '';
-    const price = row[colIndex] || '';
-
-    if(commodity.trim()){
-      tbody.insertAdjacentHTML('beforeend', `
+function renderByColumn(i){
+  const tb=document.querySelector('#priceTable tbody');
+  tb.innerHTML='';
+  let c=0;
+  for(let r=10;r<rows.length;r++){
+    const row=rows[r];
+    if(!row||row.length<i)continue;
+    const com=row[0]||'',spec=row[1]||'',unit=row[2]||'',price=row[i]||'';
+    if(com.trim()){
+      tb.insertAdjacentHTML('beforeend',`
         <tr>
-          <td>${commodity}</td>
-          <td>${spec}</td>
-          <td>${unit}</td>
-          <td>${price}</td>
-        </tr>
-      `);
-      rendered++;
+          <td>${com}</td><td>${spec}</td><td>${unit}</td><td>${price}</td>
+        </tr>`);
+      c++;
     }
   }
+  showNote(`✅ Showing ${c} records for: ${headerRow[i]}`);
+}
 
-  showNote(`✅ Showing ${rendered} items for: ${headerRow[colIndex]}`);
+function downloadPDF(){
+  const area=document.getElementById('reportArea');
+  if(!window.html2pdf){
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js';
+    s.onload=()=>html2pdf().set({
+      margin:10,filename:`DA-Price-Report-${new Date().toISOString().slice(0,10)}.pdf`,
+      pagebreak:{mode:['avoid-all','css','legacy']}
+    }).from(area).save();
+    document.body.appendChild(s);
+  }else{
+    html2pdf().set({
+      margin:10,filename:`DA-Price-Report-${new Date().toISOString().slice(0,10)}.pdf`,
+      pagebreak:{mode:['avoid-all','css','legacy']}
+    }).from(area).save();
+  }
 }
 </script>
 </body>
