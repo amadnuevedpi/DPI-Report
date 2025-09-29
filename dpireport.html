@@ -89,23 +89,35 @@ async function fetchAndParse(){
   }
 }
 
+/* ✅ Improved parser: handles “January 4, 2025”, ISO, Excel serials, etc. */
 function parseDateISO(text){
   if(!text) return null;
   const t = String(text).trim();
+
+  // Try native parsing first
   let d = new Date(t);
   if(!isNaN(d)) return d.toISOString().slice(0,10);
 
-  const alt = t.replace(/\./g,'/').split(' ')[0];
-  d = new Date(alt);
-  if(!isNaN(d)) return d.toISOString().slice(0,10);
+  // Try "January 4, 2025" style
+  const m = t.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
+  if(m){
+    const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const monthIndex = monthNames.indexOf(m[1]);
+    if(monthIndex >= 0){
+      const dt = new Date(Date.UTC(m[3], monthIndex, m[2]));
+      return dt.toISOString().slice(0,10);
+    }
+  }
 
+  // Try Excel serial number fallback
   const n = Number(t);
   if(!isNaN(n) && n > 1000){
     const excelEpoch = new Date(Date.UTC(1899,11,30));
-    const ms = (n - 0) * 24*3600*1000;
+    const ms = n * 24*3600*1000;
     const dt = new Date(excelEpoch.getTime() + ms);
     return dt.toISOString().slice(0,10);
   }
+
   return null;
 }
 
@@ -129,19 +141,17 @@ function identifyDateColumns(){
     return `<option value="${dc.index}">${label}</option>`;
   }).join('');
 
-  // ✅ Auto-select the latest (rightmost) date
+  // ✅ Auto-select latest date
   const latestIndex = dateColumns[dateColumns.length - 1].index;
   sel.value = latestIndex;
   showNote(`✅ Loaded ${dateColumns.length} date columns. Defaulting to latest date.`);
 
-  // Render table immediately with latest date
   renderByColumn(latestIndex);
 
-  // Add listeners
   sel.addEventListener('change', () => renderByColumn(Number(sel.value)));
   document.getElementById('refreshBtn').addEventListener('click', () => renderByColumn(Number(sel.value)));
 
-  // PDF button
+  // PDF download
   document.getElementById('downloadPdf').addEventListener('click', ()=>{
     const el = document.querySelector('.container');
     if(!window.html2pdf){
