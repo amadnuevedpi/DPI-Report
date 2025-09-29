@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Commodity Price — Live Report</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:#f7faf7;margin:20px;}
   .container{max-width:980px;margin:0 auto;background:white;padding:18px;border-radius:8px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
@@ -72,16 +72,20 @@ async function fetchAndParse(){
     if(!txt.trim()) return showNote('Empty CSV, make sure it’s published.', true);
 
     const parsed = Papa.parse(txt, { skipEmptyLines:false });
-    rows = parsed.data;
-    headerRow = rows[9] || []; // Row 10 = header
-    identifyDateColumns();
+    rows = parsed.data.map(r => r.map(c => (c||"").trim()));
+
+    // Find header row dynamically (contains "Commodity")
+    const headerIndex = rows.findIndex(r => r.some(c => /commodity/i.test(c))) || 9;
+    headerRow = rows[headerIndex] || [];
+    showNote(`Detected header row at index ${headerIndex}.`);
+
+    identifyDateColumns(headerIndex);
   } catch (err) {
     console.error(err);
     showNote('❌ Fetch/parsing failed — ' + err.message, true);
   }
 }
 
-// Parse "January 4, 2025" → ISO
 function parseDateISO(text){
   if(!text) return null;
   const t = String(text).trim();
@@ -95,10 +99,9 @@ function parseDateISO(text){
   return isNaN(d) ? null : d.toISOString().slice(0,10);
 }
 
-// Identify all date columns (starting at D)
-function identifyDateColumns(){
+function identifyDateColumns(headerIndex){
   dateColumns = [];
-  for(let i=3; i<headerRow.length; i++){ // start at D (index 3)
+  for(let i=3; i<headerRow.length; i++){ // Start at D (index 3)
     const iso = parseDateISO(headerRow[i]);
     if(iso) dateColumns.push({index:i, raw:headerRow[i], iso});
   }
@@ -114,10 +117,14 @@ function identifyDateColumns(){
     return `<option value="${dc.index}">${label}</option>`;
   }).join('');
 
-  sel.value = dateColumns[dateColumns.length - 1].index;
-  showNote(`✅ Found ${dateColumns.length} date columns. Defaulting to latest.`);
+  const latest = dateColumns[dateColumns.length - 1];
+  sel.value = latest.index;
+  showNote(`✅ Found ${dateColumns.length} date columns. Auto-loading latest.`);
 
-  document.getElementById('loadBtn').addEventListener('click', () => renderByColumn(Number(sel.value)));
+  // Auto-load latest
+  renderByColumn(latest.index, headerIndex);
+
+  document.getElementById('loadBtn').addEventListener('click', () => renderByColumn(Number(sel.value), headerIndex));
 
   // PDF download
   document.getElementById('downloadPdf').addEventListener('click', ()=>{
@@ -133,12 +140,13 @@ function identifyDateColumns(){
   });
 }
 
-function renderByColumn(colIndex){
+function renderByColumn(colIndex, headerIndex){
   const tbody = document.querySelector('#priceTable tbody');
   tbody.innerHTML = '';
   let rendered = 0;
 
-  for(let r=10; r<rows.length; r++){ // Data starts row 11
+  // Start after header row
+  for(let r=headerIndex+1; r<rows.length; r++){
     const row = rows[r];
     if(!row || row.length < colIndex) continue;
 
@@ -147,7 +155,7 @@ function renderByColumn(colIndex){
     const unit = row[2] || '';
     const price = row[colIndex] || '';
 
-    if(commodity.trim()){
+    if(commodity && price){
       tbody.insertAdjacentHTML('beforeend', `
         <tr>
           <td>${commodity}</td>
