@@ -4,75 +4,115 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>DA Price Report</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600,700&display=swap" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
   :root { --da-green:#0b6623; --light-yellow:#ded371; }
 
   body {
     font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
-    background:#f0f4f7; margin:0; padding:12px;
+    background:#f0f4f7;
+    margin:0; padding:8px;
+    font-size:13px;
   }
 
-  /* Non-printable UI area */
+  /* Non-printable controls */
   .controls {
-    background:#fff; border-radius:8px; padding:14px;
-    margin-bottom:16px; box-shadow:0 4px 10px rgba(0,0,0,0.05);
+    background:#fff;
+    border-radius:6px;
+    padding:10px 14px;
+    margin-bottom:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
   }
   @media print { .controls { display:none !important; } }
 
   select,button {
-    padding:8px 10px; border-radius:6px; border:1px solid #ccc; font-size:14px;
+    padding:6px 10px;
+    border-radius:4px;
+    border:1px solid #ccc;
+    font-size:13px;
   }
-  button { cursor:pointer; background:#0b6623; color:#fff; border:none; }
+  button {
+    cursor:pointer;
+    background:#0b6623;
+    color:#fff;
+    border:none;
+    font-weight:600;
+  }
   button:hover { background:#0a5820; }
 
-  /* Header styles */
-  .top-strip{background:var(--da-green);height:6px;width:100%}
-  .yellow-strip{background:var(--light-yellow);height:6px;width:100%}
-  .header {
-    display:flex;justify-content:space-between;align-items:flex-start;
-    padding:15px 30px;background:#fff;margin-bottom:12px;
-  }
-  .left-block{display:flex;align-items:center;gap:15px}
-  .left-block img{height:70px}
-  .agency-text{font-size:14px;line-height:1.4}
-  .agency-text strong{font-size:15px;display:block;color:var(--da-green)}
+  /* Header */
+  .top-strip{background:var(--da-green);height:4px;width:100%}
+  .yellow-strip{background:var(--light-yellow);height:4px;width:100%}
 
+  .header {
+    display:flex;justify-content:space-between;align-items:center;
+    padding:8px 16px;background:#fff;margin-bottom:8px;
+  }
+  .left-block{display:flex;align-items:center;gap:10px}
+  .left-block img{height:55px}
+  .agency-text{font-size:12px;line-height:1.3}
+  .agency-text strong{font-size:13px;display:block;color:var(--da-green)}
+
+  /* Titles */
   .price-monitoring {
-    text-align:center; background:var(--light-yellow);
-    padding:8px; font-size:20px; font-weight:bold; margin-bottom:4px;
+    text-align:center;
+    background:var(--light-yellow);
+    padding:6px;
+    font-size:16px;
+    font-weight:700;
   }
   .sub-title {
     text-align:center;
-    font-weight:bold;
-    font-size:18px;
+    font-size:15px;
+    font-weight:700;
     color:#333;
-    margin-bottom:8px;
+    margin:4px 0;
   }
   .asof {
     text-align:center;
-    font-size:14px;
+    font-size:12px;
     font-style:italic;
-    margin-bottom:12px;
+    margin-bottom:6px;
   }
 
-  /* Table design */
-  .table-container { background:#fff; border-radius:8px; padding:16px; }
-  table { width:100%; border-collapse:collapse; margin-top:8px; }
-  th,td { border:1px solid #ddd; padding:8px 10px; font-size:14px; }
-  th { background:#0b6623; color:#fff; text-align:left; }
+  /* Table */
+  .table-container {
+    background:#fff;
+    border-radius:6px;
+    padding:10px;
+  }
+  table {
+    width:100%;
+    border-collapse:collapse;
+  }
+  th,td {
+    border:1px solid #ddd;
+    padding:6px 8px;
+    font-size:12px;
+  }
+  th {
+    background:#0b6623;
+    color:#fff;
+    text-align:left;
+  }
 
-  .notes { margin-top:10px; font-size:13px; color:#555; }
+  .notes { margin-top:6px;font-size:12px;color:#555; }
   .error { color:#b91c1c; font-weight:600; }
 
   /* Footer */
-  .footer-logo{display:flex;justify-content:flex-end;padding:10px 30px 0 0}
-  .footer-logo img{height:70px}
+  .footer-logo{display:flex;justify-content:flex-end;padding:6px 20px 0 0}
+  .footer-logo img{height:55px}
   footer {
-    background:var(--da-green); color:white; padding:10px 30px;
-    display:flex;align-items:center;justify-content:space-between;
-    font-size:13px;margin-top:16px;
+    background:var(--da-green);
+    color:white;
+    padding:6px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:11px;
+    margin-top:10px;
   }
   footer a {color:white;text-decoration:none}
 </style>
@@ -80,15 +120,14 @@
 
 <body>
   <div class="controls">
-    <h3 style="margin:0 0 8px 0">Agri-Fishery Commodity Retail Price</h3>
-    <label style="font-size:13px;margin-right:6px;">Select Date:</label>
+    <h3 style="margin:0 0 6px 0;font-size:14px;">Agri-Fishery Commodity Retail Price</h3>
+    <label style="font-size:12px;margin-right:6px;">Select Date:</label>
     <select id="dateSelect"></select>
     <button id="loadBtn">Load</button>
     <button id="downloadPdf">Download PDF</button>
     <div id="notes" class="notes"></div>
   </div>
 
-  <!-- Printable Area -->
   <div id="reportArea">
     <div class="top-strip"></div>
     <div class="yellow-strip"></div>
@@ -103,6 +142,7 @@
           Lenienza St., Pagadian City
         </div>
       </div>
+      <img src="https://raw.githubusercontent.com/amadnuevedpi/DA-AMAD-BP-logos/main/bag%20pil.png" height="55" alt="Bagong Pilipinas">
     </div>
 
     <div class="price-monitoring">REGION IX AGRI-FISHERY AND CIGARETTES</div>
@@ -119,7 +159,7 @@
     </div>
 
     <div class="footer-logo">
-      <img src="https://raw.githubusercontent.com/amadnuevedpi/DA-AMAD-BP-logos/main/ZAMPEN%20VINTA1.png" alt="Zampen AMAD">
+      <img src="https://raw.githubusercontent.com/amadnuevedpi/DA-AMAD-BP-logos/main/ZAMPEN%20AMAD.png" alt="Zampen AMAD">
     </div>
 
     <footer>
@@ -152,7 +192,8 @@ function init(){
       rows=parsed.data;
       headerRow=rows[9]||[];
       identifyDates();
-    }).catch(e=>showNote(e.message,true));
+    })
+    .catch(e=>showNote(e.message,true));
 }
 
 function parseDateISO(t){
@@ -184,21 +225,20 @@ function identifyDates(){
   if(dateColumns.length===0)return showNote('⚠️ No valid date columns found.',true);
 
   const sel=document.getElementById('dateSelect');
-  sel.innerHTML=dateColumns.map(dc=>
-    `<option value="${dc.index}">${new Date(dc.iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}</option>`
+  sel.innerHTML=dateColumns.map(dc =>
+    `<option value="${dc.index}">${dc.label}</option>`
   ).join('');
 
   sel.value=dateColumns.at(-1).index;
 
-  // Load selected
   document.getElementById('loadBtn').addEventListener('click',()=>{
     const idx = Number(sel.value);
-    renderByColumn(idx);
     const dc = dateColumns.find(d=>d.index===idx);
+    renderByColumn(idx);
     document.getElementById('asOfDate').innerText = `As of ${dc ? dc.label : ''}`;
   });
 
-  // Auto-load latest
+  // Auto-load last date
   document.getElementById('loadBtn').click();
 }
 
@@ -225,13 +265,15 @@ function downloadPDF(){
     const s=document.createElement('script');
     s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js';
     s.onload=()=>html2pdf().set({
-      margin:10,filename:`DA-Price-Report-${new Date().toISOString().slice(0,10)}.pdf`,
+      margin:5,
+      filename:`DA-Price-Report-${new Date().toISOString().slice(0,10)}.pdf`,
       pagebreak:{mode:['avoid-all','css','legacy']}
     }).from(area).save();
     document.body.appendChild(s);
-  }else{
+  } else {
     html2pdf().set({
-      margin:10,filename:`DA-Price-Report-${new Date().toISOString().slice(0,10)}.pdf`,
+      margin:5,
+      filename:`DA-Price-Report-${new Date().toISOString().slice(0,10)}.pdf`,
       pagebreak:{mode:['avoid-all','css','legacy']}
     }).from(area).save();
   }
@@ -239,4 +281,3 @@ function downloadPDF(){
 </script>
 </body>
 </html>
-
