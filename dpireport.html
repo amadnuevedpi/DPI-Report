@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Commodity Price — Live Report</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600,700&display=swap" rel="stylesheet">
 <style>
   body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:#f7faf7;margin:20px;}
   .container{max-width:980px;margin:0 auto;background:white;padding:18px;border-radius:8px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
@@ -72,42 +72,56 @@ async function fetchAndParse(){
     if(!txt.trim()) return showNote('Empty CSV, make sure it’s published.', true);
 
     const parsed = Papa.parse(txt, { skipEmptyLines:false });
-    rows = parsed.data.map(r => r.map(c => (c||"").trim()));
-
-    // Find header row dynamically (contains "Commodity")
-    const headerIndex = rows.findIndex(r => r.some(c => /commodity/i.test(c))) || 9;
-    headerRow = rows[headerIndex] || [];
-    showNote(`Detected header row at index ${headerIndex}.`);
-
-    identifyDateColumns(headerIndex);
+    rows = parsed.data;
+    headerRow = rows[9] || []; // Row 10 = header
+    identifyDateColumns();
   } catch (err) {
     console.error(err);
     showNote('❌ Fetch/parsing failed — ' + err.message, true);
   }
 }
 
+// Convert various date formats (e.g. "January 4, 2025" or 45678) → ISO
 function parseDateISO(text){
   if(!text) return null;
   const t = String(text).trim();
+
+  // Try standard JS date parse
+  const direct = new Date(t);
+  if(!isNaN(direct)) return direct.toISOString().slice(0,10);
+
+  // Try "Month day, year"
   const m = t.match(/^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})$/);
   if(m){
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const idx = months.indexOf(m[1]);
-    if(idx >= 0) return new Date(Date.UTC(m[3], idx, m[2])).toISOString().slice(0,10);
+    if(idx >= 0){
+      const d = new Date(Date.UTC(m[3], idx, m[2]));
+      return d.toISOString().slice(0,10);
+    }
   }
-  const d = new Date(t);
-  return isNaN(d) ? null : d.toISOString().slice(0,10);
+
+  // Try Excel numeric serial date (Google Sheets)
+  const n = Number(t);
+  if(!isNaN(n) && n > 10000){
+    const excelEpoch = new Date(Date.UTC(1899,11,30));
+    const d = new Date(excelEpoch.getTime() + n * 24*60*60*1000);
+    return d.toISOString().slice(0,10);
+  }
+
+  return null;
 }
 
-function identifyDateColumns(headerIndex){
+// Identify all date columns (starting at D)
+function identifyDateColumns(){
   dateColumns = [];
-  for(let i=3; i<headerRow.length; i++){ // Start at D (index 3)
+  for(let i=3; i<headerRow.length; i++){ // start at column D (index 3)
     const iso = parseDateISO(headerRow[i]);
     if(iso) dateColumns.push({index:i, raw:headerRow[i], iso});
   }
 
   if(dateColumns.length === 0){
-    showNote('⚠️ No valid date columns found. Check sheet headers.', true);
+    showNote('⚠️ No valid date columns found in header row (Row 10).', true);
     return;
   }
 
@@ -117,14 +131,10 @@ function identifyDateColumns(headerIndex){
     return `<option value="${dc.index}">${label}</option>`;
   }).join('');
 
-  const latest = dateColumns[dateColumns.length - 1];
-  sel.value = latest.index;
-  showNote(`✅ Found ${dateColumns.length} date columns. Auto-loading latest.`);
+  sel.value = dateColumns[dateColumns.length - 1].index;
+  showNote(`✅ Found ${dateColumns.length} date columns. Defaulting to latest.`);
 
-  // Auto-load latest
-  renderByColumn(latest.index, headerIndex);
-
-  document.getElementById('loadBtn').addEventListener('click', () => renderByColumn(Number(sel.value), headerIndex));
+  document.getElementById('loadBtn').addEventListener('click', () => renderByColumn(Number(sel.value)));
 
   // PDF download
   document.getElementById('downloadPdf').addEventListener('click', ()=>{
@@ -140,13 +150,12 @@ function identifyDateColumns(headerIndex){
   });
 }
 
-function renderByColumn(colIndex, headerIndex){
+function renderByColumn(colIndex){
   const tbody = document.querySelector('#priceTable tbody');
   tbody.innerHTML = '';
   let rendered = 0;
 
-  // Start after header row
-  for(let r=headerIndex+1; r<rows.length; r++){
+  for(let r=10; r<rows.length; r++){ // Data starts row 11
     const row = rows[r];
     if(!row || row.length < colIndex) continue;
 
@@ -155,7 +164,7 @@ function renderByColumn(colIndex, headerIndex){
     const unit = row[2] || '';
     const price = row[colIndex] || '';
 
-    if(commodity && price){
+    if(commodity.trim()){
       tbody.insertAdjacentHTML('beforeend', `
         <tr>
           <td>${commodity}</td>
