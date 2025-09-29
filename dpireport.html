@@ -8,15 +8,14 @@
 <style>
   body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:#f7faf7; margin:20px;}
   .container{max-width:980px;margin:0 auto;background:white;padding:18px;border-radius:8px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
-  header{display:flex;justify-content:space-between;gap:12px;align-items:center}
+  header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
   select,input,button{padding:8px 10px;border-radius:6px;border:1px solid #d1d5db}
   .download{background:#0b6b3a;color:white;border:none;cursor:pointer}
+  .load-btn{background:#2563eb;color:white;border:none;cursor:pointer}
   table{width:100%;border-collapse:collapse;margin-top:14px}
   th,td{padding:8px;border-bottom:1px solid #eef2e8;text-align:left}
   .notes{margin-top:12px;font-size:13px;color:#475569}
   .error{color:#b91c1c;font-weight:600}
-  .cards{display:flex;gap:12px;margin-top:12px}
-  .card{flex:1;padding:12px;border-radius:8px;border:1px solid #eef2e8;text-align:center}
 </style>
 </head>
 <body>
@@ -27,15 +26,13 @@
         <div id="meta" style="color:#64748b;font-size:13px">Make sure sheet is published to the web as CSV.</div>
       </div>
 
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <label style="font-size:13px;color:#64748b">Select date</label>
         <select id="dateSelect"></select>
-        <button id="refreshBtn">Refresh</button>
+        <button id="loadBtn" class="load-btn">Load</button>
         <button id="downloadPdf" class="download">Download PDF</button>
       </div>
     </header>
-
-    <div class="cards" id="highlights"></div>
 
     <div style="overflow:auto">
       <table id="priceTable">
@@ -141,15 +138,13 @@ function identifyDateColumns(){
     return `<option value="${dc.index}">${label}</option>`;
   }).join('');
 
-  // ✅ Auto-select latest date
+  // ✅ Default to latest date
   const latestIndex = dateColumns[dateColumns.length - 1].index;
   sel.value = latestIndex;
-  showNote(`✅ Loaded ${dateColumns.length} date columns. Defaulting to latest date.`);
+  showNote(`✅ Loaded ${dateColumns.length} date columns. Select a date and click "Load".`);
 
-  renderByColumn(latestIndex);
-
-  sel.addEventListener('change', () => renderByColumn(Number(sel.value)));
-  document.getElementById('refreshBtn').addEventListener('click', () => renderByColumn(Number(sel.value)));
+  // Add listeners
+  document.getElementById('loadBtn').addEventListener('click', () => renderByColumn(Number(sel.value)));
 
   // PDF download
   document.getElementById('downloadPdf').addEventListener('click', ()=>{
@@ -171,7 +166,7 @@ function renderByColumn(colIndex){
 
   const tbody = document.querySelector('#priceTable tbody');
   tbody.innerHTML = '';
-  let prices = [], rendered = 0;
+  let rendered = 0;
 
   for(let r=10; r<rows.length; r++){
     const row = rows[r];
@@ -188,7 +183,6 @@ function renderByColumn(colIndex){
       if(!isNaN(p)) price = p;
     }
 
-    if(commodity && (price !== null)) prices.push(price);
     tbody.insertAdjacentHTML('beforeend', `
       <tr>
         <td>${commodity || '—'}</td>
@@ -200,17 +194,7 @@ function renderByColumn(colIndex){
     rendered++;
   }
 
-  const avg = prices.length ? (prices.reduce((a,b)=>a+b,0)/prices.length).toFixed(2) : '—';
-  const mx = prices.length ? Math.max(...prices).toFixed(2) : '—';
-  const mn = prices.length ? Math.min(...prices).toFixed(2) : '—';
-
-  document.getElementById('highlights').innerHTML = `
-    <div class="card"><strong>Average</strong><div style="font-size:18px;margin-top:8px">${avg}</div></div>
-    <div class="card"><strong>Highest</strong><div style="font-size:18px;margin-top:8px">${mx}</div></div>
-    <div class="card"><strong>Lowest</strong><div style="font-size:18px;margin-top:8px">${mn}</div></div>
-  `;
-
-  showNote(`✅ Showing prices for: ${headerRow[colIndex]} — ${rendered} rows, ${prices.length} priced items.`);
+  showNote(`✅ Showing prices for: ${headerRow[colIndex]} — ${rendered} rows.`);
 }
 </script>
 </body>
