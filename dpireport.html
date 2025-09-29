@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Commodity Price — Live Report (CSV debug)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600,700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:#f7faf7; margin:20px;}
+  .container{max-width:980px;margin:0 auto;background:white;padding:18px;border-radius:8px;box-shadow:0 8px 24px rgba(2,6,23,0.06)}
+  header{display:flex;justify-content:space-between;gap:12px;align-items:center}
+  select,input,button{padding:8px 10px;border-radius:6px;border:1px solid #d1d5db}
+  .download{background:#0b6b3a;color:white;border:none;cursor:pointer}
+  table{width:100%;border-collapse:collapse;margin-top:14px}
+  th,td{padding:8px;border-bottom:1px solid #eef2e8;text-align:left}
+  .notes{margin-top:12px;font-size:13px;color:#475569}
+  .error{color:#b91c1c;font-weight:600}
+  .cards{display:flex;gap:12px;margin-top:12px}
+  .card{flex:1;padding:12px;border-radius:8px;border:1px solid #eef2e8;text-align:center}
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h3 style="margin:0 0 6px 0">Commodity Price — Live (Google Sheet CSV)</h3>
+        <div id="meta" style="color:#64748b;font-size:13px">Make sure sheet is published to the web as CSV.</div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="font-size:13px;color:#64748b">Select date</label>
+        <select id="dateSelect"></select>
+        <button id="refreshBtn">Refresh</button>
+        <button id="downloadPdf" class="download">Download PDF</button>
+      </div>
+    </header>
+
+    <div class="cards" id="highlights"></div>
+
+    <div style="overflow:auto">
+      <table id="priceTable">
+        <thead><tr><th>Commodity</th><th>Specification</th><th>Unit</th><th>Price</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="notes" id="notes">Status: waiting to fetch sheet… (open DevTools → Console/Network for raw output)</div>
+  </div>
+
+<script>
+const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2B1kT01540Rd4EIE1JmbBGoJVIF_N15yBJ815TaB_N8tViqufx1hksC9J-HcRcN8jvP2QLfl84yQr/pub?gid=1473969119&single=true&output=csv";
+
+function showNote(msg, isError=false){
+  const n = document.getElementById('notes');
+  n.innerHTML = (isError?'<span class="error">Error:</span> ':'') + msg;
+  console.log(msg);
+}
+
+// load PapaParse for CSV parsing
+const papa = document.createElement('script');
+papa.src = 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js';
+papa.onload = init;
+document.head.appendChild(papa);
+
+let rows = [], headerRow = [], dateColumns = [];
+
+function init(){
+  showNote('Loading CSV from Google Sheets...');
+  fetchAndParse();
+}
+
+async function fetchAndParse(){
+  try{
+    const res = await fetch(SHEET_CSV, {cache: "no-store"});
+    console.log('Fetch response:', res.status, res.statusText);
+    const txt = await res.text();
+    if(!txt || txt.trim().length === 0){
+      showNote('Empty CSV. Make sure sheet is published as CSV.', true);
+      return;
+    }
+
+    const parsed = Papa.parse(txt, {skipEmptyLines:false});
+    rows = parsed.data;
+    headerRow = rows[9] || []; // row 10 in sheet
+    identifyDateColumns();
+  } catch (err) {
+    console.error(err);
+    showNote('❌ Fetch/parsing failed — ' + err.message, true);
+  }
+}
+
+function parseDateISO(text){
+  if(!text) return null;
+  const t = String(text).trim();
+  let d = new Date(t);
+  if(!isNaN(d)) return d.toISOString().slice(0,10);
+
+  const alt = t.replace(/\./g,'/').split(' ')[0];
+  d = new Date(alt);
+  if(!isNaN(d)) return d.toISOString().slice(0,10);
+
+  const n = Number(t);
+  if(!isNaN(n) && n > 1000){
+    const excelEpoch = new Date(Date.UTC(1899,11,30));
+    const ms = (n - 0) * 24*3600*1000;
+    const dt = new Date(excelEpoch.getTime() + ms);
+    return dt.toISOString().slice(0,10);
+  }
+  return null;
+}
+
+function identifyDateColumns(){
+  dateColumns = [];
+  for(let i=0; i<headerRow.length; i++){
+    const iso = parseDateISO(headerRow[i]);
+    if(iso){
+      dateColumns.push({index:i, raw:headerRow[i], iso});
+    }
+  }
+
+  if(dateColumns.length === 0){
+    showNote('No date-like headers found in row 10. Check your sheet.', true);
+    return;
+  }
+
+  const sel = document.getElementById('dateSelect');
+  sel.innerHTML = dateColumns.map(dc => {
+    const label = (new Date(dc.iso)).toLocaleDateString(undefined, {year:'numeric',month:'short',day:'numeric'});
+    return `<option value="${dc.index}">${label}</option>`;
+  }).join('');
+
+  // ✅ Auto-select the latest (rightmost) date
+  const latestIndex = dateColumns[dateColumns.length - 1].index;
+  sel.value = latestIndex;
+  showNote(`✅ Loaded ${dateColumns.length} date columns. Defaulting to latest date.`);
+
+  // Render table immediately with latest date
+  renderByColumn(latestIndex);
+
+  // Add listeners
+  sel.addEventListener('change', () => renderByColumn(Number(sel.value)));
+  document.getElementById('refreshBtn').addEventListener('click', () => renderByColumn(Number(sel.value)));
+
+  // PDF button
+  document.getElementById('downloadPdf').addEventListener('click', ()=>{
+    const el = document.querySelector('.container');
+    if(!window.html2pdf){
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js';
+      s.onload = ()=> html2pdf().set({margin:10, filename:`Commodity-Report-${new Date().toISOString().slice(0,10)}.pdf`}).from(el).save();
+      document.body.appendChild(s);
+    } else {
+      html2pdf().set({margin:10, filename:`Commodity-Report-${new Date().toISOString().slice(0,10)}.pdf`}).from(el).save();
+    }
+  });
+}
+
+function renderByColumn(colIndex){
+  if(!rows || rows.length === 0) return showNote('No data to render.');
+  if(typeof colIndex !== 'number' || isNaN(colIndex)) return showNote('Invalid date selection.', true);
+
+  const tbody = document.querySelector('#priceTable tbody');
+  tbody.innerHTML = '';
+  let prices = [], rendered = 0;
+
+  for(let r=10; r<rows.length; r++){
+    const row = rows[r];
+    if(!row || row.length === 0) continue;
+    const commodity = row[0] || '';
+    const spec = row[1] || '';
+    const unit = row[2] || '';
+    const rawPrice = row[colIndex];
+    let price = null;
+
+    if(rawPrice && String(rawPrice).trim() !== ''){
+      const cleaned = String(rawPrice).replace(/,/g,'').replace(/[^\d\.\-]/g,'').trim();
+      const p = parseFloat(cleaned);
+      if(!isNaN(p)) price = p;
+    }
+
+    if(commodity && (price !== null)) prices.push(price);
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>${commodity || '—'}</td>
+        <td>${spec || '—'}</td>
+        <td>${unit || '—'}</td>
+        <td>${price !== null ? price.toFixed(2) : '—'}</td>
+      </tr>
+    `);
+    rendered++;
+  }
+
+  const avg = prices.length ? (prices.reduce((a,b)=>a+b,0)/prices.length).toFixed(2) : '—';
+  const mx = prices.length ? Math.max(...prices).toFixed(2) : '—';
+  const mn = prices.length ? Math.min(...prices).toFixed(2) : '—';
+
+  document.getElementById('highlights').innerHTML = `
+    <div class="card"><strong>Average</strong><div style="font-size:18px;margin-top:8px">${avg}</div></div>
+    <div class="card"><strong>Highest</strong><div style="font-size:18px;margin-top:8px">${mx}</div></div>
+    <div class="card"><strong>Lowest</strong><div style="font-size:18px;margin-top:8px">${mn}</div></div>
+  `;
+
+  showNote(`✅ Showing prices for: ${headerRow[colIndex]} — ${rendered} rows, ${prices.length} priced items.`);
+}
+</script>
+</body>
+</html>
